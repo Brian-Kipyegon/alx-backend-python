@@ -20,5 +20,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include("chats.urls")),
+    path("api/", include("chats.urls")),  # Include chats app routes under /api/
+    path(
+        "api-auth/", include("rest_framework.urls")
+    ),  # Enables DRF's login/logout views
 ]
