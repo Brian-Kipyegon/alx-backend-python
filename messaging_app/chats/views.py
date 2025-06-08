@@ -1,7 +1,10 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from django_filters import rest_framework as filters
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+from django_filters import rest_framework as filters
+from django.shortcuts import get_object_or_404
+
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import IsParticipantOfConversation
@@ -21,19 +24,14 @@ class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = ConversationFilter
-    permission_classes = [IsParticipantOfConversation]
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
 
     def get_queryset(self):
         return Conversation.objects.filter(participants=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def perform_create(self, serializer):
         conversation = serializer.save()
-        conversation.participants.add(request.user)
-        return Response(
-            self.get_serializer(conversation).data, status=status.HTTP_201_CREATED
-        )
+        conversation.participants.add(self.request.user)
 
 
 class MessageFilter(filters.FilterSet):
@@ -46,20 +44,30 @@ class MessageFilter(filters.FilterSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
     serializer_class = MessageSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = MessageFilter
     pagination_class = MessagePagination
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
 
     def get_queryset(self):
         user = self.request.user
-        return Message.objects.filter(conversation__participants=user)
+        queryset = Message.objects.filter(conversation__participants=user)
+        return queryset
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        message = serializer.save(sender=request.user)
-        return Response(
-            self.get_serializer(message).data, status=status.HTTP_201_CREATED
-        )
+    def perform_create(self, serializer):
+        conversation = serializer.validated_data.get("conversation")
+        if self.request.user not in conversation.participants.all():
+            raise PermissionDenied("You are not a participant of this conversation.")
+        serializer.save(sender=self.request.user)
+
+    def perform_update(self, serializer):
+        message = self.get_object()
+        if self.request.user != message.sender:
+            raise PermissionDenied("You are not allowed to update this message.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if self.request.user != instance.sender:
+            raise PermissionDenied("You are not allowed to delete this message.")
+        instance.delete()
