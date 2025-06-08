@@ -16,6 +16,10 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
+    @property
+    def id(self):
+        return self.user_id
+
 
 # Conversation Model
 class Conversation(models.Model):

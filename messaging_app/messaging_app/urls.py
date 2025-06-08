@@ -17,11 +17,15 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include("chats.urls")),  # Include chats app routes under /api/
-    path(
-        "api-auth/", include("rest_framework.urls")
-    ),  # Enables DRF's login/logout views
+    # JWT Authentication endpoints
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    # Chats app routes under /api/
+    path("api/", include("chats.urls")),
+    # Optional: DRF browsable API login/logout views
+    path("api-auth/", include("rest_framework.urls")),
 ]
