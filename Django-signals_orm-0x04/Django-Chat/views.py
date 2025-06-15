@@ -1,13 +1,13 @@
-# Django-Chat/Views/views.py
-
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
 from django.shortcuts import redirect
-from django.views.decorators.http import require_POST
+from django.contrib.auth.models import User
 
 
-@require_POST
 @login_required
 def delete_user(request):
-    request.user.delete()
-    return redirect("home")
+    if request.method == "POST":
+        user = request.user
+        logout(request)
+        user.delete()
+        return redirect("home")  # Adjust 'home' to your homepage URL name
