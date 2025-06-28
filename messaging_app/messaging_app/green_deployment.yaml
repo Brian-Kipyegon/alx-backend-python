@@ -1,0 +1,15 @@
+...
+metadata:
+  name: messaging-green
+spec:
+  selector:
+    matchLabels:
+      app: messaging-green
+  template:
+    metadata:
+      labels:
+        app: messaging-green
+    spec:
+      containers:
+      - name: messaging-container
+        image: yourdockerhubusername/messaging-app:2.0
