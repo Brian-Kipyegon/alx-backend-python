@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Apply deployment update
+kubectl apply -f messaging_app/blue_deployment.yaml
+
+# Monitor rollout
+kubectl rollout status deployment/messaging-app
+
+# Test service during update
+for i in {1..10}
+do
+  curl http://messaging.local/
+  sleep 1
+done
+
+# Check updated pods
+kubectl get pods
