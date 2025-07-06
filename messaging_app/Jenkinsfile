@@ -1,0 +1,31 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git credentialsId: 'github-creds', url: 'https://github.com/Brian-Kipyegon/alx-backend-python.git'
+            }
+        }
+
+        stage('Install Dependencies and Run Tests') {
+            steps {
+                // Create a virtualenv using ShiningPanda and run the shell commands inside it
+                shiningPanda {
+                    pythonInterpreter: 'CPython-3'  // Use whatever interpreter name you configured
+                    command: '''
+                        pip install --upgrade pip
+                        pip install -r messaging_app/requirements.txt
+                        pytest messaging_app/tests/ --junitxml=report.xml
+                    '''
+                }
+            }
+        }
+
+        stage('Archive Test Report') {
+            steps {
+                junit 'report.xml'
+            }
+        }
+    }
+}
